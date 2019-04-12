@@ -114,7 +114,7 @@
 
 				var rows = d3.select('#current-tab tbody')
 				  .selectAll('tr')
-				  .data(updates)
+				  .data(updates, (d) => d.tripUpdate.trip.tripId)
 				  .join('tr')
 				  .style('font-weight', 'bold')
 				  .style('background-color', (d) => getRoute(getTrip(d.tripUpdate.trip.tripId).route_id).route_color);
@@ -127,7 +127,7 @@
 				rows.append('td').text((d) => d.tripUpdate.stopTimeUpdate[0].stopId);
 				rows.append('td').text((d) => { 
 					var time = +d.tripUpdate.stopTimeUpdate[0].arrival.time;
-					var date = new Date(time);
+					var date = new Date(time*1000);
 					return date.toLocaleTimeString("en-us", {
 						hour12: false,
 						formatMatcher: "basic",
@@ -140,6 +140,8 @@
 					else if (delay == 0) { return "-"; }
 					else { return delay+"s";; }
 				});
+
+				// setTimeout(updateRealTime, 1000);
 				 
 			}
 
@@ -181,24 +183,29 @@
   			display: table;
   			width: 100%;
   			border-spacing:.5em;
-  			height: 800px;
+  			height: 50em;
 			}
-			.col {
-    		display: table-cell;
-    		border: #666 1px solid;
-    		vertical-align: top;
-			}
-			.sides {
-				width: 20%;
-    		padding: 1em;
-			}
-			.middle {
-				width: 60%;
-				padding: 0;
+			@media (min-width: 80em) {
+				.col {
+	    		display: table-cell;
+	    		border: #666 1px solid;
+	    		vertical-align: top;
+	    		padding: 1em;
+				}
+				.sides {
+					width: 25%;
+				}
+				.middle {
+					width: 50%;
+					padding: 0;
+				}
 			}
 			#current-div {
-				height: 500px;
+				height: 40em;
     		overflow-y: scroll;
+			}
+			#current-tab {
+				font-size: 0.9em;
 			}
 			thead {
 				font-weight: bold;
