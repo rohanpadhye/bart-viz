@@ -110,22 +110,30 @@
 				// Get real time updates
 				var msg = await d3.json("cgi-bin/bart-realtime-get-json");
 				var updates = msg.entity;
-				updates.sort((a, b) => a.tripUpdate.stopTimeUpdate[0].arrival.time - b.tripUpdate.stopTimeUpdate[0].arrival.time)
+
+				// Sort in descending order of delays
+				updates.sort((a, b) => b.tripUpdate.stopTimeUpdate[0].arrival.delay - a.tripUpdate.stopTimeUpdate[0].arrival.delay)
+
 
 				var rows = d3.select('#current-tab tbody')
 				  .selectAll('tr')
 				  .data(updates, (d) => d.tripUpdate.trip.tripId)
-				  .join('tr')
-				  .style('font-weight', 'bold')
-				  .style('background-color', (d) => getRoute(getTrip(d.tripUpdate.trip.tripId).route_id).route_color);
+				  .join(enter => enter.append('tr')
+				  	.call(row => row.append('td').attr('class', 'dest'))
+				  	.call(row => row.append('td').attr('class', 'stop'))
+				  	.call(row => row.append('td').attr('class', 'time'))
+				  	.call(row => row.append('td').attr('class', 'delay'))
+				    .style('font-weight', 'bold')
+				    .style('background-color', (d) => getRoute(getTrip(d.tripUpdate.trip.tripId).route_id).route_color));
 				  
-				rows.append('td')
+				rows.selectAll('td.dest')
 				  .text((d) => getTrip(d.tripUpdate.trip.tripId).trip_headsign)
+				  .attr('title', (d) => getTrip(d.tripUpdate.trip.tripId).trip_headsign)
 				  .style('white-space', 'nowrap')
 				  .style('overflow', 'hidden')
 				  .style('text-overflow', 'ellipsis');
-				rows.append('td').text((d) => d.tripUpdate.stopTimeUpdate[0].stopId);
-				rows.append('td').text((d) => { 
+				rows.selectAll('td.stop').text((d) => d.tripUpdate.stopTimeUpdate[0].stopId);
+				rows.selectAll('td.time').text((d) => { 
 					var time = +d.tripUpdate.stopTimeUpdate[0].arrival.time;
 					var date = new Date(time*1000);
 					return date.toLocaleTimeString("en-us", {
@@ -134,15 +142,35 @@
 						timeZone: "America/Los_Angeles"
 					});
 				});
-				rows.append('td').text((d) => { 
+				rows.selectAll('td.delay').text((d) => { 
 					var delay = d.tripUpdate.stopTimeUpdate[0].arrival.delay;
-					if (delay > 0) { return "+"+delay+"s"; }
-					else if (delay == 0) { return "-"; }
-					else { return delay+"s";; }
+					if (delay == 0) { 
+						return "-"; 
+					} else { 
+						// Format delay (e.g. '+1m2s' or '+30s' or '-5s')
+						if (delay > 0) {
+							str = "+";
+						} else {
+							str = "-";
+						}
+						delay = Math.abs(delay)
+						if (delay > 60) {
+							str += Math.floor(delay/60) + "m ";
+							delay = delay % 60;
+						}
+						str += delay + "s";
+						return str; 
+					}
 				});
-
-				// setTimeout(updateRealTime, 1000);
 				 
+			}
+
+			function updateLoop() {
+				// Fetch real-time data and update all views
+				updateRealTime();
+
+				// Schedule this function for continuous updates
+				setTimeout(updateLoop, 3000);
 			}
 
 			async function init() {
@@ -162,7 +190,7 @@
 				renderBartMap(svg);
 
 				// End by firing off the real-time updates
-				updateRealTime();
+				updateLoop();
 			} 
 		</script>
 		<style type="text/css">
