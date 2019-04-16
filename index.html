@@ -143,6 +143,11 @@
 					var idx = 0; 
 
 					// ... TODO: Find the best idx ...
+					if (stopTimeUpdates[0].stopSequence == "1") {
+						// This train hasn't even started, so it may just be a scheduled item
+						// and not really a train. Skip it.
+						continue;
+					}
 
 					// Set "latestUpdate" field
 					d.latestUpdate = stopTimeUpdates[idx];
@@ -175,8 +180,12 @@
 					}
 				}
 
-				// Sort in descending order of delays
-				updates.sort((a, b) => b.latestUpdate.arrival.delay - a.latestUpdate.arrival.delay)
+				// Filter out updates to keep only those that have a "latestUpdate"
+				updates = updates.filter(d => d.latestUpdate);
+
+				// Sort in descending order of delays, and then by ascending order of arrival time
+				updates.sort((a, b) => a.latestUpdate.arrival.time - b.latestUpdate.arrival.time);
+				updates.sort((a, b) => b.latestUpdate.arrival.delay - a.latestUpdate.arrival.delay);
 
 				var rows = d3.select('#current-tab tbody')
 				  .selectAll('tr')
@@ -187,7 +196,9 @@
 				  	.call(row => row.append('td').attr('class', 'time'))
 				  	.call(row => row.append('td').attr('class', 'delay'))
 				    .style('font-weight', 'bold')
-				    .style('background-color', (d) => getRoute(getTrip(d.tripUpdate.trip.tripId).route_id).route_color));
+				    .style('background-color', (d) => getRoute(getTrip(d.tripId).route_id).route_color))
+				    .on('mouseover', (d) => highlightTrain(d))
+				    .on('mouseout', unhighlightTrain);
 				  
 				rows.selectAll('td.dest')
 				  .text((d) => getTrip(d.tripId).trip_headsign)
@@ -226,7 +237,6 @@
 					}
 				});
 
-				var svg = d3.select('#map');
 				var image_icon_size = 20;
 				var trains = d3.select('#bart-trains').selectAll('image')
 				               .data(updates, (d) => d.tripId);
@@ -244,7 +254,26 @@
               .attr('x', (d) => projectionX(d.latestLon) - image_icon_size/2)
               .attr('y', (d) => projectionY(d.latestLat) - image_icon_size/2);
 
+  			/* Draw a border around a train icon */
+        function highlightTrain(d) {
+        	unhighlightTrain();
 
+					var strokeWidth = 5;
+					var rectSize = image_icon_size + 2 * strokeWidth;
+					d3.select('#bart-trains')
+				    .append('rect')
+				    .attr('width', rectSize)
+				    .attr('height', rectSize)
+				    .attr('x', projectionX(d.latestLon) - rectSize/2)
+				    .attr('y', projectionY(d.latestLat) - rectSize/2)
+				    .attr('fill', 'none')
+				    .attr('stroke', "#" + getRoute(getTrip(d.tripId).route_id).route_color)
+					  .attr('stroke-width', strokeWidth);
+        }
+
+        function unhighlightTrain() {
+        	highlightedTrain = d3.select('#bart-trains').selectAll('rect').remove();
+        }
 				 
 			}
 
@@ -275,6 +304,8 @@
 				// End by firing off the real-time updates
 				updateLoop();
 			} 
+        
+        
 		</script>
 		<style type="text/css">
 			* { box-sizing: border-box; }
@@ -290,7 +321,7 @@
 			.stop {
 				font-weight: bold;
 			}
-			
+
 			.grid{
   			display: table;
   			width: 100%;
