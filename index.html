@@ -34,11 +34,31 @@
 
 			/* Initializes Map projections */
 			function initMapProjection(svg) {
-				var viewBox = svg.attr('viewBox').split(" ")
-				projection = d3.geoMercator()
-				projection.center([-122.15, 37.75])
-				projection.scale(projection.scale() * 420)
+				var viewBox = svg.attr('viewBox').split(" ");
+				projection = d3.geoMercator();
+				projection.center([-122.15, 37.75]);
+				projection.scale(projection.scale() * 420);
 				projection.translate([viewBox[2]/2, viewBox[3]/2]);
+			}
+
+			/* Project only one dimension */
+			function projectionX(lon) {
+				return projection([+lon, 0])[0];
+			}
+
+			/* Project only one dimension */
+			function projectionY(lat) {
+				return projection([0, +lat])[1];
+			}
+
+			/* Get numerical latitude for a given stop */
+			function getLat(stopId) {
+				return +(getStop(stopId).stop_lat);
+			}
+
+			/* Get numerical longitude for a given stop */
+			function getLon(stopId) {
+				return +(getStop(stopId).stop_lon);
 			}
 
 			/* Render a map of the SF bay area (via GeoJSON) on the SVG */
@@ -70,28 +90,28 @@
 				console.assert(stops && routes, "GTFS must be initialized");
 
 				var stopSize = 3;
-				var stopNodes = d3.select('#bart-system').selectAll('circle').data(stops)
+				var stopNodes = d3.select('#bart-system').selectAll('circle').data(stops);
 
 				// Create stop node symbols
 				stopNodes.enter()
 				         .append('circle')
-				         .attr('cx', (d) => projection([+d.stop_lon, +d.stop_lat])[0])
-				         .attr('cy', (d) => projection([+d.stop_lon, +d.stop_lat])[1])
+				         .attr('cx', (d) => projectionX(d.stop_lon))
+				         .attr('cy', (d) => projectionY(d.stop_lat))
 				         .attr('r', stopSize)
 				         .attr('fill', '#111');
 
 				// Label stop node symbols
 				stopNodes.enter()
 				         .append('text')
-				         .attr('x', (d) => projection([+d.stop_lon, +d.stop_lat])[0] + 3)
-				         .attr('y', (d) => projection([+d.stop_lon, +d.stop_lat])[1] + 3)
+				         .attr('x', (d) => projectionX(d.stop_lon) + 3)
+				         .attr('y', (d) => projectionY(d.stop_lat) + 3)
 				         .attr('class', 'stop label')
 				         .text((d) => d.stop_id)
 
 				 // Create routes
 				 var lineGenerator = d3.line()
-				                           .x((d) => projection([+d.shape_pt_lon, +d.shape_pt_lat])[0])
-				                           .y((d) => projection([+d.shape_pt_lon, +d.shape_pt_lat])[1]);
+				                           .x((d) => projectionX(d.shape_pt_lon))
+				                           .y((d) => projectionY(d.shape_pt_lat));
 				                           //.interpolate("linear");
 				 var lineShapes = d3.nest().key((d) => d.shape_id).entries(shapes);
 				 var linePaths = d3.select('#bart-system').selectAll('path').data(lineShapes, (d) => d.key)
@@ -111,9 +131,52 @@
 				var msg = await d3.json("cgi-bin/bart-realtime-get-json");
 				var updates = msg.entity;
 
-				// Sort in descending order of delays
-				updates.sort((a, b) => b.tripUpdate.stopTimeUpdate[0].arrival.delay - a.tripUpdate.stopTimeUpdate[0].arrival.delay)
 
+				// For each trip, set field "tripId" and "latestUpdate" for easier access later on
+				var now = new Date().getTime()/1000
+				for (d of updates) {
+					// First, set field "tripId"
+					d.tripId = d.tripUpdate.trip.tripId;
+
+					// Now look through stop-time updates
+					var stopTimeUpdates = d.tripUpdate.stopTimeUpdate;
+					var idx = 0; 
+
+					// ... TODO: Find the best idx ...
+
+					// Set "latestUpdate" field
+					d.latestUpdate = stopTimeUpdates[idx];
+
+					// If there is another stop after "idx", and if
+					// if the train already left "idx", then interpolate lat/long
+					var tripTimeElapsed = (now - stopTimeUpdates[idx].departure.time);
+					if (idx + 1 < stopTimeUpdates.length && tripTimeElapsed > 0) {
+						// Calculate fraction of trip as (trip_time_elapsed)/(trip_duration)
+						var scheduledDepartureTime = stopTimeUpdates[idx].departure.time - stopTimeUpdates[idx].departure.delay;
+						var scheduledArrivalTime = stopTimeUpdates[idx+1].arrival.time - stopTimeUpdates[idx+1].arrival.delay;
+						var tripDuration = scheduledArrivalTime - scheduledDepartureTime;
+						var frac = tripTimeElapsed / tripDuration;
+						console.assert(tripDuration >= 0, "Trip duration must be positive: " + tripDuration);
+						console.assert(frac >= 0, "Fraction must be >= 0: " + frac);
+						console.assert(frac <= 1, "Fraction must be <= 1: " + frac);
+
+						// Estimate latest value for lat/long using linear interpolation
+						d.latestLon = getLon(stopTimeUpdates[idx].stopId) * frac + 
+							getLon(stopTimeUpdates[idx+1].stopId) * (1 - frac);
+						d.latestLat = getLat(stopTimeUpdates[idx].stopId) * frac + 
+							getLat(stopTimeUpdates[idx+1].stopId) * (1 - frac);
+						// console.log(frac);
+						// console.log(d.latestLon);
+						// console.log(d.latestLat);
+						// console.log("\n\n\n");
+					} else {
+						d.latestLon = getLon(stopTimeUpdates[idx].stopId);
+						d.latestLat = getLat(stopTimeUpdates[idx].stopId);
+					}
+				}
+
+				// Sort in descending order of delays
+				updates.sort((a, b) => b.latestUpdate.arrival.delay - a.latestUpdate.arrival.delay)
 
 				var rows = d3.select('#current-tab tbody')
 				  .selectAll('tr')
@@ -127,14 +190,14 @@
 				    .style('background-color', (d) => getRoute(getTrip(d.tripUpdate.trip.tripId).route_id).route_color));
 				  
 				rows.selectAll('td.dest')
-				  .text((d) => getTrip(d.tripUpdate.trip.tripId).trip_headsign)
-				  .attr('title', (d) => getTrip(d.tripUpdate.trip.tripId).trip_headsign)
+				  .text((d) => getTrip(d.tripId).trip_headsign)
+				  .attr('title', (d) => getTrip(d.tripId).trip_headsign)
 				  .style('white-space', 'nowrap')
 				  .style('overflow', 'hidden')
 				  .style('text-overflow', 'ellipsis');
-				rows.selectAll('td.stop').text((d) => d.tripUpdate.stopTimeUpdate[0].stopId);
+				rows.selectAll('td.stop').text((d) => d.latestUpdate.stopId);
 				rows.selectAll('td.time').text((d) => { 
-					var time = +d.tripUpdate.stopTimeUpdate[0].arrival.time;
+					var time = +d.latestUpdate.arrival.time;
 					var date = new Date(time*1000);
 					return date.toLocaleTimeString("en-us", {
 						hour12: false,
@@ -143,7 +206,7 @@
 					});
 				});
 				rows.selectAll('td.delay').text((d) => { 
-					var delay = d.tripUpdate.stopTimeUpdate[0].arrival.delay;
+					var delay = d.latestUpdate.arrival.delay;
 					if (delay == 0) { 
 						return "-"; 
 					} else { 
@@ -162,6 +225,26 @@
 						return str; 
 					}
 				});
+
+				var svg = d3.select('#map');
+				var image_icon_size = 20;
+				var trains = d3.select('#bart-trains').selectAll('image')
+				               .data(updates, (d) => d.tripId);
+
+				trains.transition()
+				      .duration(500)
+              .attr('x', (d) => projectionX(d.latestLon) - image_icon_size/2)
+              .attr('y', (d) => projectionY(d.latestLat) - image_icon_size/2);
+
+
+				trains.enter().append('image')
+              .attr('xlink:href', 'img/train.svg')
+              .attr('width', image_icon_size)
+              .attr('height', image_icon_size)
+              .attr('x', (d) => projectionX(d.latestLon) - image_icon_size/2)
+              .attr('y', (d) => projectionY(d.latestLat) - image_icon_size/2);
+
+
 				 
 			}
 
@@ -170,7 +253,7 @@
 				updateRealTime();
 
 				// Schedule this function for continuous updates
-				setTimeout(updateLoop, 3000);
+				setTimeout(updateLoop, 5000);
 			}
 
 			async function init() {
@@ -201,12 +284,13 @@
 			}
 
 			.label {
-				font-size: 0.5em;
+				font-size: 0.8em;
 			}
 
 			.stop {
 				font-weight: bold;
 			}
+			
 			.grid{
   			display: table;
   			width: 100%;
@@ -256,6 +340,8 @@
 				<svg id="map" width="100%" height="100%" viewBox="0 0 800 800">
 					<g id="bay-area" />
 					<g id="bart-system"></g>
+					<g id="bart-trains"></g>
+					<g id="bart-alerts"></g>
 				</svg>
 			</div>
 			<div class="col sides">
