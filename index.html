@@ -6,7 +6,7 @@
      <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
       var routes, stops, trips, stop_times, shapes, geo;
-      var getTrip, getRoute;
+      var getTrip, getRoute, getStop, getTripStopBySequence;
       async function loadGtfs() {
         routes = await d3.csv("gtfs/routes.txt");
         stops = await d3.csv("gtfs/stops.txt");
@@ -18,6 +18,7 @@
         var trip_dict = d3.map(trips, (d) => d.trip_id);
         var route_dict = d3.map(routes, (d) => d.route_id);
         var stop_dict = d3.map(stops, (d) => d.stop_id);
+        var stop_times_dict = d3.nest().key((d) => d.trip_id).map(stop_times);
         getTrip = function(trip_id) {
           return trip_dict.get(trip_id);
         }
@@ -26,6 +27,12 @@
         }
         getStop = function(stop_id) {
           return stop_dict.get(stop_id);
+        }
+        getTripStopBySequence = function(trip_id, seq_id) {
+        	// Get a sequence of stops
+        	var stop_sequence = stop_times_dict.get(trip_id)
+        	// Array is 0-indexed but stop sequence is 1-indexed, so subtract 1
+        	return stop_sequence[seq_id - 1];
         }
       }
 
@@ -124,6 +131,16 @@
 
       }
 
+      // Utility function to compute time difference between stop times given in GTS,
+      // e.g. "21:15:30". We need a custom routine because BART uses 
+      // invalid times like "24:02:00" for post-midnight travel
+      function computeGtfsTimeDiff(before, after) {
+      	var t1 = before.split(':');
+      	var t2 = after.split(':');
+      	var s1 = (+t1[0]) * 3600 + (+t1[1]) * 60 + (+t1[2]);
+      	var s2 = (+t2[0]) * 3600 + (+t2[1]) * 60 + (+t2[2]);
+      	return s2 - s1;
+      }
 
 
       async function updateRealTime() {
@@ -142,34 +159,55 @@
           var stopTimeUpdates = d.tripUpdate.stopTimeUpdate;
           var idx = 0; 
 
-          // ... TODO: Find the best idx ...
+
           if (stopTimeUpdates[0].stopSequence == "1") {
             // This train hasn't even started, so it may just be a scheduled item
             // and not really a train. Skip it.
             continue;
           }
 
+
+
+
+          // BART does not provide any meaningful delay info beyond idx = 0
+          d.delay = stopTimeUpdates[0].delay;
+
+          // Move idx up until it is slightly in the future (since we like estimates)
+          while (idx + 1 < stopTimeUpdates.length && stopTimeUpdates[idx].departure_time < now) {
+          	idx++;
+          	console.log(idx);
+          }
+
           // Set "latestUpdate" field
           d.latestUpdate = stopTimeUpdates[idx];
 
+          // Try to get the stop info from GTFS
+          var nextStopSeq = stopTimeUpdates[idx].stopSequence;
+          var nextStopInfo = getTripStopBySequence(d.tripId, nextStopSeq);
+          var prevStopInfo = nextStopSeq > 1 ? getTripStopBySequence(d.tripId, nextStopSeq - 1) : null;
+
           // If there is another stop after "idx", and if
           // if the train already left "idx", then interpolate lat/long
-          var tripTimeElapsed = (now - stopTimeUpdates[idx].departure.time);
-          if (idx + 1 < stopTimeUpdates.length && tripTimeElapsed > 0) {
-            // Calculate fraction of trip as (trip_time_elapsed)/(trip_duration)
-            var scheduledDepartureTime = stopTimeUpdates[idx].departure.time - stopTimeUpdates[idx].departure.delay;
-            var scheduledArrivalTime = stopTimeUpdates[idx+1].arrival.time - stopTimeUpdates[idx+1].arrival.delay;
-            var tripDuration = scheduledArrivalTime - scheduledDepartureTime;
-            var frac = tripTimeElapsed / tripDuration;
-            console.assert(tripDuration >= 0, "Trip duration must be positive: " + tripDuration);
-            console.assert(frac >= 0, "Fraction must be >= 0: " + frac);
-            console.assert(frac <= 1, "Fraction must be <= 1: " + frac);
+          if (prevStopInfo) {
+            // Calculate fraction of remaining trip as (trip_time_elapsed)/(trip_duration)
+	          var timeToNextStop = stopTimeUpdates[idx].arrival.time - now;
+          	var stopTravelTime = computeGtfsTimeDiff(prevStopInfo.departure_time, nextStopInfo.arrival_time);
+            var fracRemaining = timeToNextStop / stopTravelTime;
+
+            // Clip fracRemaining to [-1, 1]
+            if (fracRemaining < 0) {
+            	fracRemaining = 0.0;
+            }
+            if (fracRemaining > 1) {
+            	fracRemaining = 1.0;
+            }
+
 
             // Estimate latest value for lat/long using linear interpolation
-            d.latestLon = getLon(stopTimeUpdates[idx].stopId) * frac + 
-              getLon(stopTimeUpdates[idx+1].stopId) * (1 - frac);
-            d.latestLat = getLat(stopTimeUpdates[idx].stopId) * frac + 
-              getLat(stopTimeUpdates[idx+1].stopId) * (1 - frac);
+            d.latestLon = getLon(prevStopInfo.stop_id) * fracRemaining + 
+              getLon(nextStopInfo.stop_id) * (1 - fracRemaining);
+            d.latestLat = getLat(prevStopInfo.stop_id) * fracRemaining + 
+              getLat(nextStopInfo.stop_id) * (1 - fracRemaining);
             // console.log(frac);
             // console.log(d.latestLon);
             // console.log(d.latestLat);
@@ -206,7 +244,9 @@
           .style('white-space', 'nowrap')
           .style('overflow', 'hidden')
           .style('text-overflow', 'ellipsis');
-        rows.selectAll('td.stop').text((d) => d.latestUpdate.stopId);
+        rows.selectAll('td.stop')
+            .text((d) => d.latestUpdate.stopId)
+            .attr('title', (d) => getStop(d.latestUpdate.stopId).stop_name);
         rows.selectAll('td.time').text((d) => { 
           var time = +d.latestUpdate.arrival.time;
           var date = new Date(time*1000);
@@ -282,7 +322,7 @@
         updateRealTime();
 
         // Schedule this function for continuous updates
-        setTimeout(updateLoop, 5000);
+        setTimeout(updateLoop, 2000);
       }
 
       async function init() {
