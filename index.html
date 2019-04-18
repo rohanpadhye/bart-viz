@@ -69,14 +69,16 @@
       }
 
       /* Render a map of the SF bay area (via GeoJSON) on the SVG */
+      var bart_geo, zoom;
       async function renderBayAreaMap(svg) {
 
         // Load GeoJSON downloaded from https://geodata.lib.berkeley.edu/catalog/ark28722-s7d02x
-        var geo = await d3.json("bayarea-geo.json");
-
+        if (!bart_geo) {
+          bart_geo = await d3.json("bayarea-geo.json");
+        }
         // From the GeoJSON, use only the first two features (SF + surrounding bay area lang);
         // we exclude the third feature, which is a polygon that covers the entire SF bay
-        var features = geo.features.slice(0, 2);
+        var features = bart_geo.features.slice(0, 2);
 
         // Create an SVG path using the initialized projection
         console.assert(projection, "Projection must be initialized");
@@ -84,8 +86,7 @@
 
         // Configure path data in SVG
         var paths = svg.select('#bay-area').selectAll('path').data(features);
-        paths.enter()
-          .append('path')
+        paths.join('path')
           .attr('fill', '#ccc')
           .attr('d', geoPath)
           .exit();
@@ -98,18 +99,17 @@
 
         var stopSize = 3;
         var stopNodes = d3.select('#bart-system').selectAll('circle').data(stops);
+        var stopLabels = d3.select('#bart-system').selectAll('text').data(stops);
 
         // Create stop node symbols
-        stopNodes.enter()
-                 .append('circle')
+        stopNodes.join('circle')
                  .attr('cx', (d) => projectionX(d.stop_lon))
                  .attr('cy', (d) => projectionY(d.stop_lat))
                  .attr('r', stopSize)
                  .attr('fill', '#111');
 
         // Label stop node symbols
-        stopNodes.enter()
-                 .append('text')
+        stopLabels.join('text')
                  .attr('x', (d) => projectionX(d.stop_lon) + 3)
                  .attr('y', (d) => projectionY(d.stop_lat) + 3)
                  .attr('class', 'stop-label')
@@ -122,8 +122,7 @@
                                    //.interpolate("linear");
          var lineShapes = d3.nest().key((d) => d.shape_id).entries(shapes);
          var linePaths = d3.select('#bart-system').selectAll('path').data(lineShapes, (d) => d.key)
-         linePaths.enter()
-                  .append('path')
+         linePaths.join('path')
                   .attr('d', (d) => lineGenerator(d.values))
                   .attr('stroke', 'black')
                   .attr('stroke-width', 2)
@@ -143,6 +142,7 @@
       }
 
 
+      var train_icon_size = 20;
       async function updateRealTime() {
         // Get real time updates
         var msg = await d3.json("cgi-bin/bart-realtime-get-json");
@@ -234,7 +234,7 @@
             .call(row => row.append('td').attr('class', 'stop'))
             .call(row => row.append('td').attr('class', 'time'))
             .call(row => row.append('td').attr('class', 'delay')))
-          .classed('stripe', (d, i) => i % 2)
+          .attr('id', d => 'row-'+d.tripId)
           .on('mouseover', (d) => highlightTrain(d))
           .on('click', (d) => selectTrain(d))
           .on('mouseout', unhighlightTrain)
@@ -281,32 +281,31 @@
         .classed('delay-med', d => d.delayType == 'med')
         .classed('delay-low', d => d.delayType == 'low');
 
-        var image_icon_size = 20;
         var trains = d3.select('#bart-trains').selectAll('image')
-                       .data(updates, (d) => d.tripId)
-                       .on('mouseover', (d) => highlightTrain(d))
-                       .on('click', (d) => selectTrain(d))
-                       .on('mouseout', unhighlightTrain);
+                       .data(updates, (d) => d.tripId);
 
         trains.transition()
-              .duration(500)
-              .attr('x', (d) => projectionX(d.latestLon) - image_icon_size/2)
-              .attr('y', (d) => projectionY(d.latestLat) - image_icon_size/2);
+              .duration(50)
+              .attr('x', (d) => projectionX(d.latestLon) - train_icon_size/2)
+              .attr('y', (d) => projectionY(d.latestLat) - train_icon_size/2);
 
 
         trains.enter().append('image')
               .attr('xlink:href', d => 'img/train-'+d.delayType+'.svg')
-              .attr('width', image_icon_size)
-              .attr('height', image_icon_size)
-              .attr('x', (d) => projectionX(d.latestLon) - image_icon_size/2)
-              .attr('y', (d) => projectionY(d.latestLat) - image_icon_size/2);
+              .attr('width', train_icon_size)
+              .attr('height', train_icon_size)
+              .attr('x', (d) => projectionX(d.latestLon) - train_icon_size/2)
+              .attr('y', (d) => projectionY(d.latestLat) - train_icon_size/2)
+              .on('mouseover', (d) => highlightTrain(d))
+              .on('click', (d) => selectTrain(d))
+              .on('mouseout', unhighlightTrain);
 
         /* Draw a border around a train icon */
         function highlightTrain(d) {
           unhighlightTrain();
 
           var strokeWidth = 3;
-          var rectSize = image_icon_size + 2 * strokeWidth;
+          var rectSize = train_icon_size + 2 * strokeWidth;
           d3.select('#bart-trains')
             .append('rect')
             .attr('width', rectSize)
@@ -316,16 +315,27 @@
             .attr('fill', 'none')
             .attr('stroke', 'black')//"#" + getRoute(getTrip(d.tripId).route_id).route_color)
             .attr('stroke-width', strokeWidth);
+
+          // Highlight table row
+          d3.select('#row-'+d.tripId).classed('highlight', true);
         }
 
         function unhighlightTrain() {
           highlightedTrain = d3.select('#bart-trains').selectAll('rect').remove();
+          d3.selectAll('#current-table tr').classed('highlight', false);
         }
          
         /* Show some info about a train */ 
         function selectTrain(d) {
           console.log(d.tripId);
         }
+      }
+
+      function renderTrains(svg) {
+        var trains = svg.select('#bart-trains').selectAll('image');
+
+        trains.attr('x', (d) => projectionX(d.latestLon) - train_icon_size/2)
+              .attr('y', (d) => projectionY(d.latestLat) - train_icon_size/2);
       }
 
       function updateLoop() {
@@ -347,10 +357,30 @@
         initMapProjection(svg);
 
         // Render Bay area map
-        renderBayAreaMap(svg);
+        await renderBayAreaMap(svg);
 
         // Render BART map
-        renderBartMap(svg);
+        await renderBartMap(svg);
+
+
+
+        // Make the map zoomable
+        var initialScale = projection.scale();
+        var [initialX, initialY] = projection.translate();
+        console.log(initialX)
+        zoom = d3.zoom()
+                     zoom.on("zoom", () => {
+                      // Update map projection based on zoom event
+                      var transform = d3.event.transform;
+                      projection.translate([transform.x + initialX, transform.y + initialY]);
+                      projection.scale(initialScale * transform.k);
+
+                      // Re-render map, system, and trains
+                      renderBayAreaMap(svg);
+                      renderBartMap(svg);
+                      renderTrains(svg);
+                    });
+        svg.call(zoom);
 
         // Show real-time tab
         showTab('realtime');
@@ -358,6 +388,10 @@
         // End by firing off the real-time updates
         updateLoop();
       } 
+
+      function resetZoom() {
+        zoom.transform(d3.select('#map'), d3.zoomIdentity);
+      }
         
       function showTab(id) {
         // First, hide all tab contents and make all tab headers boring
@@ -439,6 +473,10 @@
         cursor: pointer;
       }
 
+      #current-table tr.highlight {
+        background-color: #ccc;
+      }
+
       tr.stripe {
         /* background-color: #ccc; */
       }
@@ -475,16 +513,15 @@
         <div class="tab-content" id="tab-realtime-content">
         	<div class="grid">
             <div class="col sides">
-              <h2>Real-time Delay</h2>
               <div id="current-div">
                 <table id="current-table" style="table-layout: fixed;">
-                  <thead><th>Trip</th><th>Stop</th><th>Arrival</th><th>Delay</th></thead>
+                  <thead><th>Line</th><th>Stop</th><th>Arrival</th><th>Delay</th></thead>
                   <tbody></tbody>
                 </table>
               </div>
             </div>
             <div class="col middle">
-              <svg id="map" width="100%" height="100%" viewBox="0 0 800 800">
+              <svg id="map" width="100%" height="600" viewBox="0 0 800 800">
                 <g id="bay-area" />
                 <g id="bart-system"></g>
                 <g id="bart-trains"></g>
@@ -492,8 +529,7 @@
               </svg>
             </div>
             <div class="col sides">
-              <h2>Station Info</h2>
-              <p>More stuff to be added...</p>
+              <p>Bart chart goes here</p>
             </div>
           </div>
         </div>
