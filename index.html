@@ -112,7 +112,7 @@
                  .append('text')
                  .attr('x', (d) => projectionX(d.stop_lon) + 3)
                  .attr('y', (d) => projectionY(d.stop_lat) + 3)
-                 .attr('class', 'stop label')
+                 .attr('class', 'stop-label')
                  .text((d) => d.stop_id)
 
          // Create routes
@@ -170,7 +170,8 @@
 
 
           // BART does not provide any meaningful delay info beyond idx = 0
-          d.delay = stopTimeUpdates[0].delay;
+          d.delay = stopTimeUpdates[0].arrival.delay;
+          d.delayType = (d.delay >= 60 ? "high" : (d.delay >= 30 ? "med" : "low"));
 
           // Move idx up until it is slightly in the future (since we like estimates)
           while (idx + 1 < stopTimeUpdates.length && stopTimeUpdates[idx].departure_time < now) {
@@ -225,18 +226,19 @@
         updates.sort((a, b) => a.latestUpdate.arrival.time - b.latestUpdate.arrival.time);
         updates.sort((a, b) => b.latestUpdate.arrival.delay - a.latestUpdate.arrival.delay);
 
-        var rows = d3.select('#current-tab tbody')
+        var rows = d3.select('#current-table tbody')
           .selectAll('tr')
-          .data(updates, (d) => d.tripUpdate.trip.tripId)
+          .data(updates, (d) => d.tripId)
           .join(enter => enter.append('tr')
             .call(row => row.append('td').attr('class', 'dest'))
             .call(row => row.append('td').attr('class', 'stop'))
             .call(row => row.append('td').attr('class', 'time'))
-            .call(row => row.append('td').attr('class', 'delay'))
-            .style('font-weight', 'bold')
-            .style('background-color', (d) => getRoute(getTrip(d.tripId).route_id).route_color))
-            .on('mouseover', (d) => highlightTrain(d))
-            .on('mouseout', unhighlightTrain);
+            .call(row => row.append('td').attr('class', 'delay')))
+          .classed('stripe', (d, i) => i % 2)
+          .on('mouseover', (d) => highlightTrain(d))
+          .on('click', (d) => selectTrain(d))
+          .on('mouseout', unhighlightTrain)
+          .order();
           
         rows.selectAll('td.dest')
           .text((d) => getTrip(d.tripId).trip_headsign)
@@ -256,10 +258,10 @@
             timeZone: "America/Los_Angeles"
           });
         });
-        rows.selectAll('td.delay').text((d) => { 
-          var delay = d.latestUpdate.arrival.delay;
+        rows.selectAll('td.delay').text(d => { 
+          var delay = d.delay;
           if (delay == 0) { 
-            return "-"; 
+            return "0s"; 
           } else { 
             // Format delay (e.g. '+1m2s' or '+30s' or '-5s')
             if (delay > 0) {
@@ -275,11 +277,16 @@
             str += delay + "s";
             return str; 
           }
-        });
+        }).classed('delay-high', d => d.delayType == 'high')
+        .classed('delay-med', d => d.delayType == 'med')
+        .classed('delay-low', d => d.delayType == 'low');
 
         var image_icon_size = 20;
         var trains = d3.select('#bart-trains').selectAll('image')
-                       .data(updates, (d) => d.tripId);
+                       .data(updates, (d) => d.tripId)
+                       .on('mouseover', (d) => highlightTrain(d))
+                       .on('click', (d) => selectTrain(d))
+                       .on('mouseout', unhighlightTrain);
 
         trains.transition()
               .duration(500)
@@ -288,7 +295,7 @@
 
 
         trains.enter().append('image')
-              .attr('xlink:href', 'img/train.svg')
+              .attr('xlink:href', d => 'img/train-'+d.delayType+'.svg')
               .attr('width', image_icon_size)
               .attr('height', image_icon_size)
               .attr('x', (d) => projectionX(d.latestLon) - image_icon_size/2)
@@ -298,7 +305,7 @@
         function highlightTrain(d) {
           unhighlightTrain();
 
-          var strokeWidth = 5;
+          var strokeWidth = 3;
           var rectSize = image_icon_size + 2 * strokeWidth;
           d3.select('#bart-trains')
             .append('rect')
@@ -307,7 +314,7 @@
             .attr('x', projectionX(d.latestLon) - rectSize/2)
             .attr('y', projectionY(d.latestLat) - rectSize/2)
             .attr('fill', 'none')
-            .attr('stroke', "#" + getRoute(getTrip(d.tripId).route_id).route_color)
+            .attr('stroke', 'black')//"#" + getRoute(getTrip(d.tripId).route_id).route_color)
             .attr('stroke-width', strokeWidth);
         }
 
@@ -315,6 +322,10 @@
           highlightedTrain = d3.select('#bart-trains').selectAll('rect').remove();
         }
          
+        /* Show some info about a train */ 
+        function selectTrain(d) {
+          console.log(d.tripId);
+        }
       }
 
       function updateLoop() {
@@ -361,49 +372,6 @@
     <style type="text/css">
       * { box-sizing: border-box; }
 
-      #map {
-        border: 1px solid #ccc;
-      }
-
-      .label {
-        font-size: 0.8em;
-      }
-
-      .stop {
-        font-weight: bold;
-      }
-
-      .grid{
-        display: table;
-        width: 100%;
-        border-spacing:.5em;
-        height: 50em;
-      }
-      @media (min-width: 80em) {
-        .col {
-          display: table-cell;
-          border: #666 1px solid;
-          vertical-align: top;
-          padding: 1em;
-        }
-        .sides {
-          width: 25%;
-        }
-        .middle {
-          width: 50%;
-          padding: 0;
-        }
-      }
-      #current-div {
-        height: 40em;
-        overflow-y: scroll;
-      }
-      #current-tab {
-        font-size: 0.9em;
-      }
-      thead {
-        font-weight: bold;
-      }
 
       #tabs {
         text-align: center;
@@ -426,6 +394,71 @@
         display: none; /* Initial */
       }
 
+      #map {
+        border: 1px solid #ccc;
+      }
+
+      .stop-label {
+        font-weight: bold;
+        font-size: 0.8em;
+      }
+
+      .grid{
+        display: table;
+        width: 100%;
+        border-spacing:.5em;
+        height: 50em;
+      }
+
+      @media (min-width: 80em) {
+        .col {
+          display: table-cell;
+          border: #666 1px solid;
+          vertical-align: top;
+          padding: 1em;
+        }
+        .sides {
+          width: 25%;
+        }
+        .middle {
+          width: 50%;
+          padding: 0;
+        }
+      }
+
+      #current-div {
+        height: 40em;
+        overflow-y: scroll;
+      }
+
+      #current-table {
+        font-size: 0.9em;
+      }
+
+      #current-table tr:hover {
+        cursor: pointer;
+      }
+
+      tr.stripe {
+        /* background-color: #ccc; */
+      }
+
+      svg #bart-trains image:hover {
+        cursor: pointer;
+      }
+
+      .delay-high {
+        color: red;
+      }
+
+      .delay-med {
+        color: brown;
+      }
+
+      .delay-low {
+        color: teal;
+      }
+
     </style>
   </head>
   <body onload="init()">
@@ -444,8 +477,8 @@
             <div class="col sides">
               <h2>Real-time Delay</h2>
               <div id="current-div">
-                <table id="current-tab" style="table-layout: fixed;">
-                  <thead><td>Trip</td><td>Stop</td><td>Arrival</td><td>Delay</td></thead>
+                <table id="current-table" style="table-layout: fixed;">
+                  <thead><th>Trip</th><th>Stop</th><th>Arrival</th><th>Delay</th></thead>
                   <tbody></tbody>
                 </table>
               </div>
