@@ -300,6 +300,9 @@
               .on('click', (d) => selectTrain(d))
               .on('mouseout', unhighlightTrain);
 
+        /* Refresh the bar chart */
+        renderBarChart(updates);
+
         /* Draw a border around a train icon */
         function highlightTrain(d) {
           unhighlightTrain();
@@ -338,12 +341,59 @@
               .attr('y', (d) => projectionY(d.latestLat) - train_icon_size/2);
       }
 
+      function renderBarChart(updates) {
+        var svg = d3.select('#delay-categories');
+        var viewBox = svg.attr('viewBox').split(" ");
+        var width = +viewBox[2];
+        var height = +viewBox[3];
+        var bars = svg.select('#bar-chart #bars');
+        var xAxis = svg.select('#bar-chart #x-axis');
+        var yAxis = svg.select('#bar-chart #y-axis');
+
+        var data = []
+        var delayTypes = ['low', 'med', 'high'];
+        var delayTypeCounts = delayTypes.map((t) => {
+          return {
+            'label': t,
+            'class': 'delay-'+t,
+            'count': updates.filter(d => d.delayType == t).length
+          }});
+
+        var margin = ({top: 0, right: 10, bottom: 10, left: 20});
+        var x = d3.scaleBand()
+                  .domain(delayTypes)
+                  .range([margin.left, width - margin.right]);
+
+        var y = d3.scaleLinear()
+                  .domain([0, d3.max(delayTypeCounts, d => d.count)]).nice()
+                  .range([height - margin.bottom, margin.top]);
+
+        var xAxisTransform = g => g
+          .attr("transform", `translate(0,${height - margin.bottom})`)
+          .call(d3.axisBottom(x).tickSizeOuter(0));
+        xAxis.call(xAxisTransform);
+
+        var yAxisTransform = g => g
+          .attr("transform", `translate(${margin.left},0)`)
+          .call(d3.axisLeft(y))
+          .call(g => g.select(".domain").remove());
+        yAxis.call(yAxisTransform);
+
+        bars.selectAll('rect').data(delayTypeCounts)
+            .join('rect')
+            .attr('x', d => x(d.label))
+            .attr('y', d => y(d.count))
+            .attr('height', d => y(0) - y(d.count))
+            .attr('width', x.bandwidth())
+            .attr('class', d => 'delay-' + d.label + '-bar'); 
+      }
+
       function updateLoop() {
         // Fetch real-time data and update all views
         updateRealTime();
 
         // Schedule this function for continuous updates
-        setTimeout(updateLoop, 2000);
+        setTimeout(updateLoop, 5000);
       }
 
       async function init() {
@@ -367,7 +417,6 @@
         // Make the map zoomable
         var initialScale = projection.scale();
         var [initialX, initialY] = projection.translate();
-        console.log(initialX)
         zoom = d3.zoom()
                      zoom.on("zoom", () => {
                       // Update map projection based on zoom event
@@ -391,6 +440,9 @@
 
       function resetZoom() {
         zoom.transform(d3.select('#map'), d3.zoomIdentity);
+        renderBayAreaMap(svg);
+        renderBartMap(svg);
+        renderTrains(svg);
       }
         
       function showTab(id) {
@@ -489,12 +541,24 @@
         color: red;
       }
 
+      .delay-high-bar {
+        fill: red;
+      }
+
       .delay-med {
         color: brown;
       }
 
+      .delay-med-bar {
+        fill: brown;
+      }
+
       .delay-low {
         color: teal;
+      }
+
+      .delay-low-bar {
+        fill: teal;
       }
 
     </style>
@@ -529,7 +593,14 @@
               </svg>
             </div>
             <div class="col sides">
-              <p>Bart chart goes here</p>
+              <svg id="delay-categories" width="100%" height="400" viewBox="0 0 100 100">
+                <g id="bar-chart"> 
+                  <g id="bars" stroke="black" />
+                  <g id="x-axis" />
+                  <g id="y-axis" />
+                </g>
+              </svg>
+              <p>sfsf</p>
             </div>
           </div>
         </div>
