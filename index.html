@@ -480,6 +480,8 @@
 
       .tab-content {
         display: none; /* Initial */
+        text-align: center;
+        margin: auto;
       }
 
       #map {
@@ -576,8 +578,8 @@
     <div id="tabs">
       <div id="tab-headers">
         <button class="tab-header" id="tab-realtime-header" onclick="showTab('realtime')">Real-time delays</button>
-        <button class="tab-header" id="tab-daily-header" onclick="showTab('daily')">Whole-day delay</button>
-        <button class="tab-header" id="tab-cross-header" onclick="showTab('cross')">Commute time variance</button>
+        <button class="tab-header" id="tab-daily-header" onclick="showTab('daily')">Delays by time of day</button>
+        <button class="tab-header" id="tab-cross-header" onclick="showTab('cross')">Delays by station</button>
       </div>
 
       <div id="tab-contents">
@@ -622,7 +624,9 @@
           </div>
         </div>
         <div class="tab-content" id="tab-daily-content">Daily!!</div>
-        <div class="tab-content" id="tab-cross-content">Cross!!</div>
+        <div class="tab-content" id="tab-cross-content">
+<script type='text/javascript' src='https://us-west-2b.online.tableau.com/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 1000px; height: 827px;'><object class='tableauViz' width='1000' height='827' style='display:none;'><param name='host_url' value='https%3A%2F%2Fus-west-2b.online.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;introtodatavisualizationfall2018' /><param name='name' value='bart_New_Dashboardv5&#47;Dashboard1b' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /><param name='filter' value='iframeSizedToWindow=true' /></object></div>
+        </div>
       </div>
     </div>
 
