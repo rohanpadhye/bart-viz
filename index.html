@@ -145,7 +145,7 @@
       var train_icon_size = 20;
       async function updateRealTime() {
         // Get real time updates
-        var msg = await d3.json("cgi-bin/bart-realtime-get-json");
+        var msg = await d3.json("cgi-bin/realtime.cgi");
         var updates = msg.entity;
 
 
