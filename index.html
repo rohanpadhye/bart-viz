@@ -148,7 +148,6 @@
         var msg = await d3.json("cgi-bin/realtime.cgi");
         var updates = msg.entity;
 
-
         // For each trip, set field "tripId" and "latestUpdate" for easier access later on
         var now = new Date().getTime()/1000
         for (d of updates) {
@@ -165,9 +164,6 @@
             // and not really a train. Skip it.
             continue;
           }
-
-
-
 
           // BART does not provide any meaningful delay info beyond idx = 0
           d.delay = stopTimeUpdates[0].arrival.delay;
@@ -226,6 +222,10 @@
         updates.sort((a, b) => a.latestUpdate.arrival.time - b.latestUpdate.arrival.time);
         updates.sort((a, b) => b.latestUpdate.arrival.delay - a.latestUpdate.arrival.delay);
 
+        // Update header
+        d3.select("#trip-count").text("(" + updates.length + ")");
+
+        // Update table
         var rows = d3.select('#current-table tbody')
           .selectAll('tr')
           .data(updates, (d) => d.tripId)
@@ -586,7 +586,7 @@
         <div class="tab-content" id="tab-realtime-content">
         	<div class="grid">
             <div class="col sides">
-              <h2>Current Trips</h2>
+              <h2>Current Trips <span id="trip-count"></span></h2>
               <div id="current-div">
                 <table id="current-table" style="table-layout: fixed;">
                   <thead><th>Line</th><th>Stop</th><th>Arrival</th><th>Delay</th></thead>
