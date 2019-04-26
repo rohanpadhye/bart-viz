@@ -6,7 +6,7 @@
 /* Body */
 html {
   font-size: 62.5%;
-  font-family: Helvetica, Verdana, Geneva, sans-serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
 body {
@@ -27,8 +27,8 @@ body {
     font-size: 1.35rem; } }
 
 h1, h2, h3, h4, h5, h6 {
+  font-family: 'Prompt', sans-serif;
   line-height: 1.1;
-  font-family: Georgia, serif; 
   font-weight: 700;
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -123,6 +123,7 @@ textarea {
   width: 100%; }
 
 .button, button, input[type="submit"], input[type="reset"], input[type="button"] {
+  font-family: 'Prompt', sans-serif;
   display: inline-block;
   padding: 5px 10px;
   text-align: center;

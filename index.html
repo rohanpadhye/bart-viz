@@ -1,6 +1,8 @@
 <html>
   <head>
     <title>BART System</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Prompt" rel="stylesheet" />
     <link rel="stylesheet" href="css/normalize.css" />
     <link rel="stylesheet" href="css/sakura.css" />
      <script src="https://d3js.org/d3.v5.min.js"></script>
@@ -434,7 +436,7 @@
         svg.call(zoom);
 
         // Show real-time tab
-        showTab('realtime');
+        showTab('home');
 
         // End by firing off the real-time updates
         updateLoop();
@@ -460,8 +462,7 @@
     <style type="text/css">
       * { box-sizing: border-box; }
 
-
-      #tabs {
+      h1, #tabs, #tab-contents {
         text-align: center;
       }
 
@@ -481,6 +482,7 @@
       .tab-content {
         display: none; /* Initial */
         text-align: center;
+        width: 100%;
         margin: auto;
       }
 
@@ -498,7 +500,7 @@
         font-size: 0.8em;
       }
 
-      .grid {
+      #tab-realtime-content .grid {
         display: table;
         width: 100%;
         border-spacing:.5em;
@@ -506,16 +508,16 @@
       }
 
       @media (min-width: 80em) {
-        .col {
+        #tab-realtime-content .col {
           display: table-cell;
           border: #666 1px solid;
           vertical-align: top;
           padding: 1em;
         }
-        .sides {
+        #tab-realtime-content .sides {
           width: 25%;
         }
-        .middle {
+        #tab-realtime-content .middle {
           width: 50%;
           padding: 0;
         }
@@ -570,6 +572,34 @@
         fill: teal;
       }
 
+      .tableauPlaceholder {
+      	text-align: center;
+      }
+
+      #tab-home-content .home-grid  {
+		display: table; 
+		width: 80%; 
+		margin: auto;
+        margin-top: 2em;
+      }
+
+      #tab-home-content .home-cell {
+      	display: table-cell;
+      	width: 35%;
+      	margin: auto;
+      }
+
+      #tab-home-content .home-cell img.screenshot {
+      	border: 1px solid black;
+      	width: 300px;
+      	height: 200px;
+      }
+
+
+      #tab-home-content .home-cell img.screenshot:hover {
+      	cursor: pointer;
+      }
+
     </style>
   </head>
   <body onload="init()">
@@ -577,12 +607,42 @@
 
     <div id="tabs">
       <div id="tab-headers">
+      	<button class="tab-header" id="tab-home-header" onclick="showTab('home')">Home</button>
         <button class="tab-header" id="tab-realtime-header" onclick="showTab('realtime')">Real-time delays</button>
         <button class="tab-header" id="tab-daily-header" onclick="showTab('daily')">Delays by time of day</button>
-        <button class="tab-header" id="tab-cross-header" onclick="showTab('cross')">Delays by station</button>
+        <button class="tab-header" id="tab-trip-header" onclick="showTab('trip')">Delays by scheduled trip</button>
+        <button class="tab-header" id="tab-stations-header" onclick="showTab('stations')">Delays by station</button>
       </div>
 
       <div id="tab-contents">
+        <div class="tab-content" id="tab-home-content">
+        	<div class="home-grid">
+        		<div class="home-cell">
+        			<h2>Real-time Delays</h2>
+        			<a onclick="showTab('realtime')"><img class="screenshot" src="img/realtime.png" /></a>
+        			<p>Observe the trains running <em>running right now!</em><br />Categorizes currently running trains into <span class="delay-low">low</span>, <span class="delay-med">medium</span>, and <span class="delay-high">high</span> delays.</p>
+        		</div>
+        		<div class="home-cell">
+        			<h2>Delays by Time of Day</h2>
+        			<a onclick="showTab('daily')"><img class="screenshot" src="img/daily.png" /></a>
+        			<p>Analyze past delays on BART lines throughout a given service day.<br />Shows stop-wise delays for individual trains as well as average hourly delay.</p>
+        		</div>
+        	</div>
+        	<div class="home-grid">
+        		<div class="home-cell">
+        			<h2>Delays by Trip</h2>
+        			<a onclick="showTab('trip')"><img class="screenshot" src="img/trip.png" /></a>
+        			<p>Analyze past delays on trips by scheduled trip ID.<br />Shows deviations from scheduled stop times aggregated across multiple dates.</p>
+        		</div>
+        		<div class="home-cell">
+        			<h2>Delays by Station</h2>
+        			<a onclick="showTab('stations')"><img class="screenshot" src="img/stations.png" /></a>
+        			<p>Analyze past delays originating at specific BART stations.<br />Shows aggregated delays between pairs of stations.</p>
+        		</div>
+        	</div>
+        	<div style="display: table"></div>
+
+        </div>
         <div class="tab-content" id="tab-realtime-content">
         	<div class="grid">
             <div class="col sides">
@@ -623,9 +683,11 @@
             </div>
           </div>
         </div>
-        <div class="tab-content" id="tab-daily-content"><script type='text/javascript' src='https://us-west-2b.online.tableau.com/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 1000px; height: 827px;'><object class='tableauViz' width='1000' height='827' style='display:none;'><param name='host_url' value='https%3A%2F%2Fus-west-2b.online.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;introtodatavisualizationfall2018' /><param name='name' value='BARTViz&#47;Dashboard3' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /><param name='filter' value='iframeSizedToWindow=true' /></object></div></div>
+        <div class="tab-content" id="tab-daily-content">
+          <script type='text/javascript' src='https://us-west-2b.online.tableau.com/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 1000px; height: 827px;'><object class='tableauViz' width='1000' height='827' style='display:none;'><param name='host_url' value='https%3A%2F%2Fus-west-2b.online.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;introtodatavisualizationfall2018' /><param name='name' value='BARTViz_0&#47;Dashboard3' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /><param name='filter' value='iframeSizedToWindow=true' /></object></div>
+        </div>
         
-        <div class="tab-content" id="tab-cross-content">
+        <div class="tab-content" id="tab-stations-content">
 <script type='text/javascript' src='https://us-west-2b.online.tableau.com/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 1000px; height: 827px;'><object class='tableauViz' width='1000' height='827' style='display:none;'><param name='host_url' value='https%3A%2F%2Fus-west-2b.online.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;introtodatavisualizationfall2018' /><param name='name' value='bart_New_Dashboardv5&#47;Dashboard1b' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /><param name='filter' value='iframeSizedToWindow=true' /></object></div>
         </div>
       </div>
