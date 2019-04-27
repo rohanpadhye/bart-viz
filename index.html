@@ -600,6 +600,10 @@
       	cursor: pointer;
       }
 
+      #tableauPlaceholder {
+      	margin:0 auto;
+      }
+
     </style>
   </head>
   <body onload="init()">
@@ -689,6 +693,22 @@
         <div class="tab-content" id="tab-stations-content">
 <script type='text/javascript' src='https://us-west-2b.online.tableau.com/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 1000px; height: 827px;'><object class='tableauViz' width='1000' height='827' style='display:none;'><param name='host_url' value='https%3A%2F%2Fus-west-2b.online.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;introtodatavisualizationfall2018' /><param name='name' value='bart_New_Dashboardv5&#47;Dashboard1b' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /><param name='filter' value='iframeSizedToWindow=true' /></object></div>
         </div>
+        <div class="tab-content" id="tab-trip-content">
+        <div id="trip-text" style="width: 1000px; margin:0 auto; text-align: justify;">
+        	<br>
+        	<br>
+        	<h2>Delays by scheduled trip</h2>
+        	<p>
+        		BART, like most public transit agencies, operates according to published daily schedules, which vary by day of the week. BART uses three schedules -- weekday, Saturday, and Sunday -- and each schedule describes when each train arrives at a given station. By comparing these scheduled arrival times with the times trains <i>actually</i> arrive at each stop, we can assess BART's on-time performance for any given trip on any given day.
+        	</p>
+        	<p>
+        		Every time a train arrives before or after it is scheduled to, we can say it <i>deviates</i> from the schedule. Arriving earlier than scheduled means some riders may not have arrived at the station and will now have to wait until the next train whereas arriving too late means riders will have to wait longer on the platform and will experience longer total travel times. As a result, agencies do their best to reduce schedule deviation, and the visualization below helps interested parties understand trends in how individual trips deviate from the posted BART schedule.
+        	</p>
+        	<p>
+        		To view how the on-time performance of a trip varies, first select a route by using the <b>Route Name</b> drop-down below. Then, select the name of the trip of interest from the <b>Trip</b> drop-down. The x-axis describes each station along the route, and the y-axis shows the number of seconds of deviation from the scheduled arrival time. Positive y values indicate that the train arrived after the scheduled arrival time; negative y values mean the train was early. Each box-plot shows the variation in deviation from the schedule at each station along the route for the five days of data (April 18-23) collected for this project. Larger box plots indicate more variability in the on-time performance of the trip. The colored line represents the median schedule deviation for that trip at each station.
+        	</p>	
+        </div>
+<script type='text/javascript' src='https://us-west-2b.online.tableau.com/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 1000px; height: 827px; margin:0 auto;'><object class='tableauViz' width='1000' height='827' style='display:none;'><param name='host_url' value='https%3A%2F%2Fus-west-2b.online.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;introtodatavisualizationfall2018' /><param name='name' value='MedianPerformancebyTrip&#47;FinalDash&#47;simon_hochberg@berkeley.edu&#47;Icon' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /><param name='filter' value='iframeSizedToWindow=true' /></object></div>        </div>
       </div>
     </div>
 
