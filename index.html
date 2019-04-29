@@ -631,24 +631,24 @@
         	<!--<br>-->
         	<div class="home-grid">
         		<div class="home-cell">
-        			<h2>Real-time Delays</h2>
+        			<h2>Real-time delays</h2>
         			<a onclick="showTab('realtime')"><img class="screenshot" src="img/realtime.png" /></a>
         			<p>Observe the trains running <em>running right now!</em><br />Categorizes currently running trains into <span class="delay-low">low</span>, <span class="delay-med">medium</span>, and <span class="delay-high">high</span> delays.</p>
         		</div>
         		<div class="home-cell">
-        			<h2>Delays by Time of Day</h2>
+        			<h2>Delays by time of day</h2>
         			<a onclick="showTab('daily')"><img class="screenshot" src="img/daily.png" /></a>
         			<p>Analyze past delays on BART lines throughout a given service day.<br />Shows stop-wise delays for individual trains as well as average hourly delay.</p>
         		</div>
         	</div>
         	<div class="home-grid">
         		<div class="home-cell">
-        			<h2>Delays by Scheduled Trip</h2>
+        			<h2>Delays by scheduled trip</h2>
         			<a onclick="showTab('trip')"><img class="screenshot" src="img/trip.png" /></a>
         			<p>Analyze past delays on trips by scheduled trip ID.<br />Shows deviations from scheduled stop times aggregated across multiple dates.</p>
         		</div>
         		<div class="home-cell">
-        			<h2>Delays by Station</h2>
+        			<h2>Delays by station</h2>
         			<a onclick="showTab('stations')"><img class="screenshot" src="img/stations.png" /></a>
         			<p>Analyze past delays originating at specific BART stations.<br />Shows aggregated delays between pairs of stations.</p>
         		</div>
@@ -657,7 +657,7 @@
 
         </div>
         <div class="tab-content" id="tab-realtime-content">
-          <h2>Real-time Delays</h2>
+          <h2>Real-time delays</h2>
           <p class="intro">The health of the BART system can be analyzed in real-time using the visualization below. The map shows all the current running trains, whose positions update every few seconds. The train icons are colored to categorize them based on whether they are on schedule or are delayed. The three color categories are: <span class="delay-low">low</span>, <span class="delay-med">medium</span>, and <span class="delay-high">high</span>. The table on the left lists these trains in descending order of delays. The bar chart on the right shows the number of running trains in each category, along with a legend that describes the three delay categories are assigned.</p>
         	<div class="grid">
             <div class="col sides">
@@ -699,7 +699,7 @@
           </div>
         </div>
         <div class="tab-content" id="tab-daily-content" style="width: 1000px;">
-          <h2>Delays by Time of Day</h2>
+          <h2>Delays by time of day</h2>
           <p class="intro">This visualization shows the progression delay of trips on a given date, for the chosen set of routes.</p>
 
           <p class="intro">The plot at the top shows delays of individual trips: the X-axis shows the time-of-day, the Y-axis shows stops along the trains route, and the thickness of each line (i.e., each trips) indicates the amount of delay in seconds. The purpose of this visualization is to analyze when and where individual delays start and how they cluster together,</p>
@@ -709,7 +709,7 @@
           <script type='text/javascript' src='https://us-west-2b.online.tableau.com/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 1000px; height: 827px;'><object class='tableauViz' width='1000' height='827' style='display:none;'><param name='host_url' value='https%3A%2F%2Fus-west-2b.online.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;introtodatavisualizationfall2018' /><param name='name' value='BARTViz_0&#47;Dashboard3' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /><param name='filter' value='iframeSizedToWindow=true' /></object></div>
         </div>
         <div class="tab-content" id="tab-stations-content"  style="width: 1000px;">
-          <h2>Delays by Station</h2>
+          <h2>Delays by station</h2>
           <script type='text/javascript' src='https://us-west-2b.online.tableau.com/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 1000px; height: 827px;'><object class='tableauViz' width='1000' height='827' style='display:none;'><param name='host_url' value='https%3A%2F%2Fus-west-2b.online.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;introtodatavisualizationfall2018' /><param name='name' value='bart_New_Dashboardv5&#47;Dashboard1b' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /><param name='filter' value='iframeSizedToWindow=true' /></object></div>
         </div>
         <div class="tab-content" id="tab-trip-content" style="width: 1000px;">
