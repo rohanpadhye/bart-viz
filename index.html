@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>BART System</title>
+    <title>BART Delays</title>
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css?family=Prompt" rel="stylesheet" />
     <link rel="stylesheet" href="css/normalize.css" />
@@ -169,7 +169,7 @@
 
           // BART does not provide any meaningful delay info beyond idx = 0
           d.delay = stopTimeUpdates[0].arrival.delay;
-          d.delayType = (d.delay >= 60 ? "high" : (d.delay >= 30 ? "med" : "low"));
+          d.delayType = (d.delay >= 300 ? "high" : (d.delay >= 120 ? "med" : "low"));
 
           // Move idx up until it is slightly in the future (since we like estimates)
           while (idx + 1 < stopTimeUpdates.length && stopTimeUpdates[idx].departure_time < now) {
@@ -473,8 +473,8 @@
       }
 
       .tab-active { 
-        background-color: #982c61;
-        border-color: #982c61;
+        background-color: black;
+        border-color: black;
         color: #f9f9f9;
         outline: 0;
       }
@@ -562,19 +562,19 @@
       }
 
       .delay-med {
-        color: brown;
+        color: orange;
       }
 
       .delay-med-bar {
-        fill: brown;
+        fill: orange;
       }
 
       .delay-low {
-        color: teal;
+        color: green;
       }
 
       .delay-low-bar {
-        fill: teal;
+        fill: green;
       }
 
       .tableauPlaceholder {
@@ -612,7 +612,7 @@
     </style>
   </head>
   <body onload="init()">
-    <h1>BART Delays</h1>
+    <h1><img src="img/logo.svg" height="100" alt="BART Delays"/></h1>
 
     <div id="tabs">
       <div id="tab-headers">
@@ -689,11 +689,11 @@
               <h3>Legend</h3>
               <dl>
                 <dt class="delay-low">low</dt>
-                <dd>Less than 30 seconds delayed (includes running trains with no delay). This is normal operation.</dd>
+                <dd>Less than 2 minute delayed (includes running trains with no delay). This is normal operation.</dd>
                 <dt class="delay-med">med</dt>
-                <dd>30-60 seconds delayed. Trains with medium delay are expected to catch up by making time before their trip ends.</dd>
+                <dd>2-5 minutes delayed. Trains with medium delay are expected to catch up by making time before their trip ends.</dd>
                 <dt class="delay-high">high</dt>
-                <dd>More than 1 minute delay. High delay indicates severe issues with the system that can cause long-term cascading backups.</dd>
+                <dd>More than 5 minutes delay. High delay indicates severe issues with the system that can cause long-term cascading backups.</dd>
               </dl>
             </div>
           </div>
