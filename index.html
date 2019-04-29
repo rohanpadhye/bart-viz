@@ -255,7 +255,7 @@
           var time = +d.latestUpdate.arrival.time;
           var date = new Date(time*1000);
           return date.toLocaleTimeString("en-us", {
-            hour12: false,
+            hour12: true,
             formatMatcher: "basic",
             timeZone: "America/Los_Angeles"
           });
