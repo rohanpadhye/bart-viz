@@ -627,7 +627,7 @@
         <button class="tab-header" id="tab-realtime-header" onclick="showTab('realtime')">Real-time delays</button>
         <button class="tab-header" id="tab-daily-header" onclick="showTab('daily')">Delays by time of day</button>
         <button class="tab-header" id="tab-trip-header" onclick="showTab('trip')">Delays by scheduled trip</button>
-        <button class="tab-header" id="tab-stations-header" onclick="showTab('stations')">Delays by station</button>
+        <button class="tab-header" id="tab-stations-header" onclick="showTab('stations')">Delays by station and time of day</button>
       </div>
 
       <div id="tab-contents">
@@ -655,9 +655,9 @@
         			<p>Analyze past delays on trips by scheduled trip ID.<br />Shows deviations from scheduled stop times aggregated across multiple dates.</p>
         		</div>
         		<div class="home-cell">
-        			<h2>Delays by station</h2>
+        			<h2>Delays by station and time of day</h2>
         			<a onclick="showTab('stations')"><img class="screenshot" src="img/stations.png" /></a>
-        			<p>Analyze past delays originating at specific BART stations.<br />Shows aggregated delays between pairs of stations.</p>
+        			<p>Analyze average total and incremental delays on lines by station.<br />Shows information aggregated over trips and days.</p>
         		</div>
         	</div>
         	<div style="display: table"></div>
