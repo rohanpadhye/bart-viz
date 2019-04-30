@@ -401,6 +401,9 @@
       }
 
       async function init() {
+        // Show home tab
+        showTab('home');
+
         // Load GTFS csv files into global vars
         // We await for this call because other stuff depends on GTFS
         await loadGtfs();
@@ -434,9 +437,6 @@
                       renderTrains(svg);
                     });
         svg.call(zoom);
-
-        // Show real-time tab
-        showTab('home');
 
         // End by firing off the real-time updates
         updateLoop();
